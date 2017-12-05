@@ -69,7 +69,7 @@ func (tmdb *TMDb) SearchMovie(title string, year string) (SearchResult, error) {
 		return resp, err
 	}
 	if res.StatusCode != 200 {
-		return resp, errors.New(fmt.Sprintf("HTTP Resposnse %s", res.StatusCode))
+		return resp, errors.New(fmt.Sprintf("HTTP Resposnse %d", res.StatusCode))
 	}
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
