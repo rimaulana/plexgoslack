@@ -3,9 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/BurntSushi/toml"
-	"github.com/ashwanthkumar/slack-go-webhook"
-	"github.com/rimaulana/plexgoslack/tmdb"
 	"io/ioutil"
 	"log"
 	"os"
@@ -13,33 +10,42 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/BurntSushi/toml"
+	"github.com/ashwanthkumar/slack-go-webhook"
+	"github.com/rimaulana/plexgoslack/tmdb"
 )
 
-var tmdb_conn *tmdb.TMDb
+var tmdbConn *tmdb.TMDb
 var conf Config
 
-type mdb struct {
-	ApiKey string `toml:"api_key"`
+// MDb explanation
+type MDb struct {
+	APIKey string `toml:"api_key"`
 }
 
-type slackCfg struct {
+// SlackCfg explanation
+type SlackCfg struct {
 	WebHook []string `toml:"webhooks"`
 }
 
-type plexLibrary struct {
+// PlexLibrary explanation
+type PlexLibrary struct {
 	Root    string `toml:"root"`
 	Section int    `toml:"section"`
 }
 
+// Config explanation
 type Config struct {
-	Tmdb    mdb                    `toml:"tmdb"`
-	PlexUrl string                 `toml:"plex_url"`
-	Plex    map[string]plexLibrary `toml:"plex"`
-	Slack   slackCfg               `toml:"slack"`
+	Tmdb    MDb                    `toml:"tmdb"`
+	PlexURL string                 `toml:"plex_url"`
+	Plex    map[string]PlexLibrary `toml:"plex"`
+	Slack   SlackCfg               `toml:"slack"`
 }
 
-func postToSlack(message tmdb.MovieInfo) {
-	text := fmt.Sprintf("New movie is now available on <%sweb/index.html|Plex>", conf.PlexUrl)
+// PostToSlack documentation
+func PostToSlack(message tmdb.MovieInfo) {
+	text := fmt.Sprintf("New movie is now available on <%sweb/index.html|Plex>", conf.PlexURL)
 	test := fmt.Sprintf("%s (%s)", message.Title, message.Year)
 	head := "Synopsis"
 	atth1 := slack.Attachment{
@@ -63,7 +69,8 @@ func postToSlack(message tmdb.MovieInfo) {
 	}
 }
 
-func difference(a, b []os.FileInfo) []string {
+// Diff documentation
+func Diff(a, b []os.FileInfo) []string {
 	mb := map[string]bool{}
 	for _, x := range a {
 		mb[x.Name()] = true
@@ -77,20 +84,21 @@ func difference(a, b []os.FileInfo) []string {
 	return ab
 }
 
+// Analyze documentation
 func Analyze(path string) (tmdb.MovieInfo, error) {
 	regex := regexp.MustCompile("((?:[^\\/]+)(?:(?:\\S+\\s+)))\\(([0-9]{4})\\)\\/?$")
 	result := regex.FindStringSubmatch(path)
 	if len(result) == 3 {
-		res, err := tmdb_conn.GetInfo(strings.TrimSpace(result[1]), strings.TrimSpace(result[2]))
+		res, err := tmdbConn.GetInfo(strings.TrimSpace(result[1]), strings.TrimSpace(result[2]))
 		if err != nil {
 			return tmdb.MovieInfo{}, err
 		}
 		return res, nil
-	} else {
-		return tmdb.MovieInfo{}, errors.New("Path doesn't match regex")
 	}
+	return tmdb.MovieInfo{}, errors.New("Path doesn't match regex")
 }
 
+// Watcher documentation
 func Watcher(root string) {
 	log.Println("info: monitoring folder", root)
 	files, err := ioutil.ReadDir(root)
@@ -102,14 +110,14 @@ func Watcher(root string) {
 		if err != nil {
 			log.Println("error:", err)
 		}
-		diff := difference(files, files2)
+		diff := Diff(files, files2)
 		for _, newMovie := range diff {
 			log.Println("info: detected", newMovie)
 			res, err := Analyze(newMovie)
 			if err != nil {
 				log.Println("error:", err)
 			} else {
-				go postToSlack(res)
+				go PostToSlack(res)
 			}
 		}
 		files = files2
@@ -129,10 +137,10 @@ func main() {
 	if _, err := toml.Decode(string(RawConfig[:]), &conf); err != nil {
 		log.Fatal("Error: ", err)
 	}
-	tmdb_conn = tmdb.New(conf.Tmdb.ApiKey)
+	tmdbConn = tmdb.New(conf.Tmdb.APIKey)
 
 	done := make(chan bool)
-	for fldr, _ := range conf.Plex {
+	for fldr := range conf.Plex {
 		go Watcher(conf.Plex[fldr].Root)
 	}
 	<-done
