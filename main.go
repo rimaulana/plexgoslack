@@ -100,15 +100,25 @@ func Analyze(path string) (tmdb.MovieInfo, error) {
 }
 
 // UpdateRepo documentation
-func UpdateRepo(section string) {
-	_, err := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo -u plex -E -H \"$LD_LIBRARY_PATH/Plex Media Scanner\" --scan --refresh --section %s --force", section)).Output()
-	if err != nil {
-		log.Fatal(err)
+func UpdateRepo(invoker <-chan int) {
+	var DataMap map[int]time.Time
+	for inv := range invoker {
+		if _, ok := DataMap[inv]; ok {
+			tnow := time.Now()
+			if elapsed := tnow.Sub(DataMap[inv]); elapsed >= 5 {
+				DataMap[inv] = tnow
+				if _, err := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo -u plex -E -H \"$LD_LIBRARY_PATH/Plex Media Scanner\" --scan --refresh --section %d --force", inv)).Output(); err != nil {
+					log.Println("Error :", err)
+				}
+			} else {
+				log.Println("Updated:", elapsed, "ago")
+			}
+		}
 	}
 }
 
 // Watcher documentation
-func Watcher(root string) {
+func Watcher(root string, section int, invoker chan<- int) {
 	log.Println("info: monitoring folder", root)
 	files, err := ioutil.ReadDir(root)
 	if err != nil {
@@ -120,6 +130,7 @@ func Watcher(root string) {
 			log.Println("error:", err)
 		}
 		diff := Diff(files, files2)
+		isNew := false
 		for _, newMovie := range diff {
 			log.Println("info: detected", newMovie)
 			res, err := Analyze(newMovie)
@@ -127,30 +138,50 @@ func Watcher(root string) {
 				log.Println("error:", err)
 			} else {
 				go PostToSlack(res)
+				isNew = true
 			}
+		}
+		if isNew {
+			invoker <- section
 		}
 		files = files2
 		time.Sleep(time.Second * 5)
 	}
 }
 
-func main() {
-	RootDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		log.Fatal("Error: ", err)
+// LoadConfig documentation
+func LoadConfig(RootDirectory string) (Config, error) {
+	var Result Config
+	log.Println("Reading config file")
+	if RawConfig, err := ioutil.ReadFile(RootDirectory + "\\config.toml"); err == nil {
+		if _, errs := toml.Decode(string(RawConfig[:]), &Result); errs != nil {
+			return Result, errs
+		}
+	} else {
+		return Result, err
 	}
-	RawConfig, err := ioutil.ReadFile(RootDir + "\\config.toml")
-	if err != nil {
-		log.Fatal("Error: ", err)
-	}
-	if _, err := toml.Decode(string(RawConfig[:]), &conf); err != nil {
-		log.Fatal("Error: ", err)
-	}
-	tmdbConn = tmdb.New(conf.Tmdb.APIKey)
+	return Result, nil
+}
 
+func main() {
+	// Getting configuration file
+	if root, err := filepath.Abs(filepath.Dir(os.Args[0])); err == nil {
+		if cfg, errs := LoadConfig(root); errs == nil {
+			conf = cfg
+		} else {
+			log.Fatal("Error: ", errs)
+		}
+	} else {
+		log.Fatal("Error: ", err)
+	}
+
+	tmdbConn = tmdb.New(conf.Tmdb.APIKey)
+	invoker := make(chan int, 100)
 	done := make(chan bool)
+
+	go UpdateRepo(invoker)
 	for fldr := range conf.Plex {
-		go Watcher(conf.Plex[fldr].Root)
+		go Watcher(conf.Plex[fldr].Root, conf.Plex[fldr].Section, invoker)
 	}
 	<-done
 }
