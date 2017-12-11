@@ -9,19 +9,22 @@ import (
 	"net/url"
 )
 
-const base_url string = "http://api.themoviedb.org/3"
+const baseURL string = "http://api.themoviedb.org/3"
 
+//TMDb 1234
 type TMDb struct {
-	api_key string
+	APIKey string
 }
 
-func New(api_key string) *TMDb {
-	return &TMDb{api_key: api_key}
+//New bla bla bla
+func New(APIKey string) *TMDb {
+	return &TMDb{APIKey: APIKey}
 }
 
+//Result bla bla bla
 type Result struct {
 	VoteCount        int     `json:"vote_count"`
-	Id               int     `json:"id"`
+	ID               int     `json:"id"`
 	Video            bool    `json:"video"`
 	VoteAverage      float32 `json:"vote_average"`
 	Title            string  `json:"title"`
@@ -36,6 +39,7 @@ type Result struct {
 	ReleaseDate      string  `json:"release_date"`
 }
 
+//SearchResult explanation
 type SearchResult struct {
 	Page         int      `json:"page"`
 	TotalResults int      `json:"total_results"`
@@ -43,13 +47,15 @@ type SearchResult struct {
 	Results      []Result `json:"results"`
 }
 
+//MovieInfo explanation
 type MovieInfo struct {
-	Title    string
-	Year     string
-	Tumbnail string
-	Synopsis string
+	Title     string
+	Year      string
+	Thumbnail string
+	Synopsis  string
 }
 
+//GetInfo explanation
 func (tmdb *TMDb) GetInfo(title string, year string) (MovieInfo, error) {
 	var resp MovieInfo
 	result, err := tmdb.SearchMovie(title, year)
@@ -59,17 +65,18 @@ func (tmdb *TMDb) GetInfo(title string, year string) (MovieInfo, error) {
 	if result.TotalResults == 0 {
 		return resp, errors.New("Couldn't find " + title + " (" + year + ") at TMDb")
 	}
-	return MovieInfo{Title: title, Year: year, Tumbnail: "https://image.tmdb.org/t/p/w92" + result.Results[0].PosterPath, Synopsis: result.Results[0].Overview}, nil
+	return MovieInfo{Title: title, Year: year, Thumbnail: "https://image.tmdb.org/t/p/w92" + result.Results[0].PosterPath, Synopsis: result.Results[0].Overview}, nil
 }
 
+//SearchMovie explanation
 func (tmdb *TMDb) SearchMovie(title string, year string) (SearchResult, error) {
 	var resp SearchResult
-	res, err := http.Get(base_url + "/search/movie?api_key=" + tmdb.api_key + "&query=" + url.QueryEscape(title) + "&year=" + year)
+	res, err := http.Get(baseURL + "/search/movie?api_key=" + tmdb.APIKey + "&query=" + url.QueryEscape(title) + "&year=" + year)
 	if err != nil {
 		return resp, err
 	}
 	if res.StatusCode != 200 {
-		return resp, errors.New(fmt.Sprintf("HTTP Resposnse %d", res.StatusCode))
+		return resp, fmt.Errorf("HTTP Resposnse %d", res.StatusCode)
 	}
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
