@@ -3,19 +3,21 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/BurntSushi/toml"
-	"github.com/ashwanthkumar/slack-go-webhook"
-	"github.com/rimaulana/plexgoslack/tmdb"
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/BurntSushi/toml"
+	"github.com/ashwanthkumar/slack-go-webhook"
+	"github.com/rimaulana/plexgoslack/tmdb"
 )
 
-var tmdb_conn *tmdb.TMDb
+var tmdbConn *tmdb.TMDb
 var conf Config
 
 type mdb struct {
@@ -81,13 +83,20 @@ func Analyze(path string) (tmdb.MovieInfo, error) {
 	regex := regexp.MustCompile("((?:[^\\/]+)(?:(?:\\S+\\s+)))\\(([0-9]{4})\\)\\/?$")
 	result := regex.FindStringSubmatch(path)
 	if len(result) == 3 {
-		res, err := tmdb_conn.GetInfo(strings.TrimSpace(result[1]), strings.TrimSpace(result[2]))
+		res, err := tmdbConn.GetInfo(strings.TrimSpace(result[1]), strings.TrimSpace(result[2]))
 		if err != nil {
 			return tmdb.MovieInfo{}, err
 		}
 		return res, nil
 	} else {
 		return tmdb.MovieInfo{}, errors.New("Path doesn't match regex")
+	}
+}
+
+func UpdateRepo(section string) {
+	_, err := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo -u plex -E -H \"$LD_LIBRARY_PATH/Plex Media Scanner\" --scan --refresh --section %s --force", section)).Output()
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 
@@ -129,7 +138,7 @@ func main() {
 	if _, err := toml.Decode(string(RawConfig[:]), &conf); err != nil {
 		log.Fatal("Error: ", err)
 	}
-	tmdb_conn = tmdb.New(conf.Tmdb.ApiKey)
+	tmdbConn = tmdb.New(conf.Tmdb.ApiKey)
 
 	done := make(chan bool)
 	for fldr, _ := range conf.Plex {
