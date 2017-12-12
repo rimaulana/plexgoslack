@@ -90,49 +90,28 @@ That will yield a file named plexgoslack
 Config file for this program is located in the folder, the name of the file is config.toml and it has the following structure
 
 ```toml
+# Is the url of your plex media server page for example https://app.plex.tv
 plex_url = "link to your plex server page"
 
+# The API Key you get on step Getting TMDb API Key
 [tmdb]
 api_key = "The movie databse API Key"
 
+# Is an array contains the webhook URL to your slack incoming webhook integration. it can be multiple webhooks
 [slack]
 webhooks = ["slack_webhook_1","slack_webhook_2"]
 
+
+# This is where you put information on each library you want to watch if there are changes. It can be multiple libraris but you need to see the limitations
 [plex]
-[plex.movies]
-root = "path where you keep you movie collection"
+[plex.movies] # the naming after plex. is up to you
+root = "/path/to/movie" #path where you keep you movie2 collection
 section = 1 #int respresent plex section number
 
-[plex.movies2]
-root = "path where you keep you movie2 collection"
+[plex.movies2] # the naming after plex. is up to you
+root = "/path/to/movie2" #path where you keep you movie2 collection
 section = 2 #int respresent plex section number
 ```
-
-##### plex_url
-
-Is the url of your plex media server page for example https://app.plex.tv
-
-##### [tmdb] api_key
-
-The API Key you get on step [Getting TMDb API Key](#getting-tmdb-api-key)
-
-##### [slack] webhooks
-
-Is an array contains the webhook URL to your slack incoming webhook integration. it can be multiple webhooks
-
-##### [plex]
-
-This is where you put information on each library you want to watch if there are changes. It can be multiple libraris but you need to see the [limitations](#limitations).
-
-```toml
-[plex.name]
-root = "path where you keep you movie collection"
-section = 1 #int respresent plex section number
-```
-
-* name is up to you
-* root is the folder where you collection is located
-* section is the section number see [Getting Section Number](#getting-section-number)
 
 ## Running the Program
 
