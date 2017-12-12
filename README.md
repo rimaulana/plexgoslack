@@ -101,11 +101,11 @@ webhooks = ["slack_webhook_1","slack_webhook_2"]
 [plex]
 [plex.movies]
 root = "path where you keep you movie collection"
-section = section number
+section = int_section_number
 
 [plex.movies2]
 root = "path where you keep you movie2 collection"
-section = section number
+section = int_section number
 ```
 
 ##### plex_url
@@ -127,7 +127,7 @@ This is where you put information on each library you want to watch if there are
 ```toml
 [plex.name]
 root = "path where you keep you movie collection"
-section = section number
+section = int_section_number
 ```
 
 * name is up to you
