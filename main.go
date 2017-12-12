@@ -101,17 +101,26 @@ func Analyze(path string) (tmdb.MovieInfo, error) {
 
 // UpdateRepo documentation
 func UpdateRepo(invoker <-chan int) {
-	var DataMap map[int]time.Time
-	for inv := range invoker {
+	DataMap := make(map[int]time.Time)
+	log.Println("Updater daemon status Running")
+	for true {
+		inv := <-invoker
+		log.Println("Updater daemon invoked by watcher")
+		command := fmt.Sprintf("sudo -u plex -E -H \"$LD_LIBRARY_PATH/Plex Media Scanner\" --scan --refresh --section %d", inv)
 		if _, ok := DataMap[inv]; ok {
 			tnow := time.Now()
 			if elapsed := tnow.Sub(DataMap[inv]); elapsed >= 5 {
 				DataMap[inv] = tnow
-				if _, err := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo -u plex -E -H \"$LD_LIBRARY_PATH/Plex Media Scanner\" --scan --refresh --section %d --force", inv)).Output(); err != nil {
+				if _, err := exec.Command("/bin/bash", "-c", command).Output(); err != nil {
 					log.Println("Error :", err)
 				}
 			} else {
 				log.Println("Updated:", elapsed, "ago")
+			}
+		} else {
+			DataMap[inv] = time.Now()
+			if _, err := exec.Command("/bin/bash", "-c", command).Output(); err != nil {
+				log.Println("Error :", err)
 			}
 		}
 	}
@@ -153,7 +162,7 @@ func Watcher(root string, section int, invoker chan<- int) {
 func LoadConfig(RootDirectory string) (Config, error) {
 	var Result Config
 	log.Println("Reading config file")
-	if RawConfig, err := ioutil.ReadFile(RootDirectory + "\\config.toml"); err == nil {
+	if RawConfig, err := ioutil.ReadFile(RootDirectory + "/config.toml"); err == nil {
 		if _, errs := toml.Decode(string(RawConfig[:]), &Result); errs != nil {
 			return Result, errs
 		}
