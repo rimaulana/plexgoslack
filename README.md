@@ -1,5 +1,7 @@
 # Plex Go Slack
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/rimaulana/plexgoslack)](https://goreportcard.com/report/github.com/rimaulana/plexgoslack) [![codebeat badge](https://codebeat.co/badges/49ab9257-bb0c-4114-aae4-0c045b35505e)](https://codebeat.co/projects/github-com-rimaulana-plexgoslack-master) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
 Here in my office, we really love to gather our resources by putting together our movies collection into our private Plex server. However, sometimes people didn't know when someone added new movie into our collection and could mistakenly
 download the same movie. So we got an Idea to create Slack bot that will inform us if there is a new movie available in our collection by sending a post about it on our Slack general channel and here is how we accomplished it.
 
