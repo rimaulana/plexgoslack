@@ -67,7 +67,7 @@ type searchResult struct {
 	Results      []result `json:"results"`
 }
 
-//MovieInfo represent the structure of the infromation
+//MovieInfo represent the structure of the information
 // we want to get from the movie we are searching for.
 type MovieInfo struct {
 	Title     string

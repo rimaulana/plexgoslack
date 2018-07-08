@@ -46,7 +46,7 @@ var cases = []struct {
 	errorMessage string
 }{
 	{
-		name:   "Case successfull request with movie details",
+		name:   "Case successful request with movie details",
 		result: resultInfo,
 		clientStub: &httpClientStub{
 			res: generalSet(200, jsonSuccess),
