@@ -86,17 +86,17 @@ func Diff(a, b []os.FileInfo) []string {
 }
 
 // Analyze documentation
-func Analyze(path string) (tmdb.MovieInfo, error) {
+func Analyze(path string) (*tmdb.MovieInfo, error) {
 	regex := regexp.MustCompile("((?:[^\\/]+)(?:(?:\\S+\\s+)))\\(([0-9]{4})\\)\\/?$")
 	result := regex.FindStringSubmatch(path)
 	if len(result) == 3 {
 		res, err := tmdbConn.GetInfo(strings.TrimSpace(result[1]), strings.TrimSpace(result[2]))
 		if err != nil {
-			return tmdb.MovieInfo{}, err
+			return nil, err
 		}
 		return res, nil
 	}
-	return tmdb.MovieInfo{}, errors.New("Path doesn't match regex")
+	return nil, errors.New("Path doesn't match regex")
 }
 
 // UpdateRepo documentation
@@ -146,7 +146,7 @@ func Watcher(root string, section int, invoker chan<- int) {
 			if err != nil {
 				log.Println("error:", err)
 			} else {
-				go PostToSlack(res)
+				go PostToSlack(*res)
 				isNew = true
 			}
 		}
