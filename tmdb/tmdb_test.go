@@ -3,7 +3,6 @@ package tmdb
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -42,7 +41,6 @@ var cases = []struct {
 	name         string
 	result       *MovieInfo
 	clientStub   *httpClientStub
-	stubReadAll  func(io.Reader) ([]byte, error)
 	errorMessage string
 }{
 	{
@@ -52,7 +50,6 @@ var cases = []struct {
 			res: generalSet(200, jsonSuccess),
 			err: nil,
 		},
-		stubReadAll:  nil,
 		errorMessage: "",
 	},
 	{
@@ -62,7 +59,6 @@ var cases = []struct {
 			res: generalSet(404, ""),
 			err: nil,
 		},
-		stubReadAll:  nil,
 		errorMessage: "HTTP response 404",
 	},
 	{
@@ -72,7 +68,6 @@ var cases = []struct {
 			res: nil,
 			err: fmt.Errorf("Timeout reached"),
 		},
-		stubReadAll:  nil,
 		errorMessage: "Timeout reached",
 	},
 	{
@@ -82,20 +77,7 @@ var cases = []struct {
 			res: generalSet(200, ""),
 			err: nil,
 		},
-		stubReadAll:  nil,
 		errorMessage: "unexpected end of JSON input",
-	},
-	{
-		name:   "Case failed reader error",
-		result: resultInfo,
-		clientStub: &httpClientStub{
-			res: generalSet(200, jsonSuccess),
-			err: nil,
-		},
-		stubReadAll: func(io.Reader) ([]byte, error) {
-			return nil, fmt.Errorf("reader error")
-		},
-		errorMessage: "reader error",
 	},
 	{
 		name:   "case failed movie information not found",
@@ -104,7 +86,6 @@ var cases = []struct {
 			res: generalSet(200, jsonEmpty),
 			err: nil,
 		},
-		stubReadAll:  nil,
 		errorMessage: fmt.Sprintf("Couldn't find %s (%s) in TMDb", resultInfo.Title, resultInfo.Year),
 	},
 }
@@ -113,9 +94,6 @@ func TestTmdb_GetInfo(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			db := New("1234567890")
-			if tt.stubReadAll != nil {
-				db.Reader = tt.stubReadAll
-			}
 			db.Client = tt.clientStub
 			info, err := db.GetInfo(resultInfo.Title, resultInfo.Year)
 			if err != nil {

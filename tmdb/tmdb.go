@@ -5,7 +5,6 @@ package tmdb
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -30,10 +29,6 @@ type TMDb struct {
 	// APIKey is required and can be acquired when we have account
 	// in the movie db
 	APIKey string
-	// Reader is and instance of ioutil.ReadAll and defined
-	// for the purpose of stubbing in unit testing and it
-	// guarantee a thread safe method of stubbing.
-	Reader func(io.Reader) ([]byte, error)
 	// Client is an instance of httpClient interface
 	Client httpClient
 }
@@ -43,9 +38,6 @@ type TMDb struct {
 func New(APIKey string) *TMDb {
 	return &TMDb{
 		APIKey: APIKey,
-		// by default reader will use ioutil.ReadAll and client
-		// will use http.Client with default timeout of 5 seconds
-		Reader: ioutil.ReadAll,
 		Client: &http.Client{
 			Timeout: time.Second * 5,
 		},
@@ -116,10 +108,7 @@ func (tmdb *TMDb) searchMovie(title string, year string) (*searchResult, error) 
 		return nil, fmt.Errorf("HTTP response %d", res.StatusCode)
 	}
 	// read body data from response
-	body, err := tmdb.Reader(res.Body)
-	if err != nil {
-		return nil, err
-	}
+	body, _ := ioutil.ReadAll(res.Body)
 	// prepare target for json unmarshaling of body data
 	var resp searchResult
 	// extract data from body
