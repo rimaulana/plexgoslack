@@ -115,7 +115,7 @@ That will yield a file named plexgoslack-vlatest-linux-amd64 under release folde
 
 ## Config File
 
-Config file for this program is located in the folder, the name of the file is config.toml and it has the following structure
+Config file for this program has the following structure
 
 ```toml
 # Is the url of your plex media server page for example https://app.plex.tv
@@ -144,7 +144,7 @@ section = 2 #int respresent plex section number
 
 ## Running the Program
 
-In order to run the program, you need to run the binary file plexgoslack you downloaded from our [release page](https://github.com/rimaulana/plexgoslack/releases) or generated on step [Compiling the Codes](#compiling-the-codes). config.toml file needs to be on the same folder as plexgoslack binary. Before running the program you need to add execute permission on it by running
+In order to run the program, you need to run the binary file plexgoslack you downloaded from our [release page](https://github.com/rimaulana/plexgoslack/releases) or generated on step [Compiling the Codes](#compiling-the-codes). config.toml file needs to be on the same folder as plexgoslack binary or you can specify it when running the code using *-config* flag. Before running the program you need to add execute permission on it by running
 
 ```bash
 sudo chmod +x plexgoslack-version-linux-amd64
@@ -155,6 +155,10 @@ once done, run the code with sudo permission
 ```bash
 sudo ./plexgoslack-version-linux-amd64
 ```  
+or with specified config file
+```bash
+sudo ./plexgoslack-version-linux-amd64 -config="/path/to/config.toml"
+```
 [back to table of contents](#table-of-contents)
 
 ## Limitations

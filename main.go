@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -12,37 +13,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/BurntSushi/toml"
 	"github.com/ashwanthkumar/slack-go-webhook"
+	"github.com/rimaulana/plexgoslack/config"
 	"github.com/rimaulana/plexgoslack/tmdb"
 )
 
-var tmdbConn *tmdb.TMDb
-var conf Config
-
-// MDb explanation
-type MDb struct {
-	APIKey string `toml:"api_key"`
-}
-
-// SlackCfg explanation
-type SlackCfg struct {
-	WebHook []string `toml:"webhooks"`
-}
-
-// PlexLibrary explanation
-type PlexLibrary struct {
-	Root    string `toml:"root"`
-	Section int    `toml:"section"`
-}
-
-// Config explanation
-type Config struct {
-	Tmdb    MDb                    `toml:"tmdb"`
-	PlexURL string                 `toml:"plex_url"`
-	Plex    map[string]PlexLibrary `toml:"plex"`
-	Slack   SlackCfg               `toml:"slack"`
-}
+var (
+	tmdbConn   *tmdb.TMDb
+	conf       *config.Config
+	configPath string
+)
 
 // PostToSlack documentation
 func PostToSlack(message tmdb.MovieInfo) {
@@ -61,7 +41,7 @@ func PostToSlack(message tmdb.MovieInfo) {
 		Text:        text,
 		Attachments: []slack.Attachment{atth1, atth2},
 	}
-	for _, hook := range conf.Slack.WebHook {
+	for _, hook := range conf.Slack.Webhook {
 		err := slack.Send(hook, "", payload)
 		log.Println("Send", message.Title, "info to Slack")
 		if len(err) > 0 {
@@ -158,31 +138,22 @@ func Watcher(root string, section int, invoker chan<- int) {
 	}
 }
 
-// LoadConfig documentation
-func LoadConfig(RootDirectory string) (Config, error) {
-	var Result Config
-	log.Println("Reading config file")
-	if RawConfig, err := ioutil.ReadFile(RootDirectory + "/config.toml"); err == nil {
-		if _, errs := toml.Decode(string(RawConfig[:]), &Result); errs != nil {
-			return Result, errs
-		}
-	} else {
-		return Result, err
-	}
-	return Result, nil
+func init() {
+	flag.StringVar(&configPath, "config", "./config.toml", "path to the specified config file, by default it is ./config.toml")
+	root, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+	configPath = fmt.Sprintf("%s/config.toml", root)
 }
 
 func main() {
-	// Getting configuration file
-	if root, err := filepath.Abs(filepath.Dir(os.Args[0])); err == nil {
-		if cfg, errs := LoadConfig(root); errs == nil {
-			conf = cfg
-		} else {
-			log.Fatal("Error: ", errs)
-		}
-	} else {
+	flag.Parse()
+
+	// Load configuration file
+	loader := config.New()
+	cfg, err := loader.Load(configPath)
+	if err != nil {
 		log.Fatal("Error: ", err)
 	}
+	conf = cfg
 
 	tmdbConn = tmdb.New(conf.Tmdb.APIKey)
 	invoker := make(chan int, 100)
